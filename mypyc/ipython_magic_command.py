@@ -2,7 +2,6 @@
 
 To enable the magics below, execute ``%load_ext mypyc``.
 """
-import imp
 import io
 import os
 import sys
@@ -11,6 +10,7 @@ import distutils.log
 import hashlib
 from distutils.core import Distribution
 from distutils.command.build_ext import build_ext
+import importlib.machinery
 
 from .build import get_extension, mypycify
 from mypy.version import __version__ as mypy_version
@@ -112,7 +112,9 @@ class MypycMagics(Magics):
             # Build failed and printed error message
             return None
 
-        module = imp.load_dynamic(module_name, module_path)
+        loader = importlib.machinery.ExtensionFileLoader(module_name, module_path)
+        spec = importlib.machinery.ModuleSpec(name=module_name, loader=loader, origin=module_path)
+        module = importlib._bootstrap._load(spec)
         self._import_all(module)
 
     def _mypycify(self, module_name, code, lib_dir, args, quiet=True):
